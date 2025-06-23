@@ -10,8 +10,8 @@ import mongoose from "mongoose"
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const accessToken = await user.generateAccessToken()
+        const refreshToken = await user.generateRefreshToken()
 
         user.refreshToken = refreshToken
         await user.save({validateBeforeSave: false})
@@ -152,7 +152,7 @@ const logoutUser = asyncHandler (async (req, res) => {
         req.user._id,
         {
             $set: {
-                refreshToken: undefined
+                refreshToken: undefined  //null should also work or can use $unset: {refreshToken: 1}
             }
         },
         {
@@ -312,7 +312,7 @@ const logoutUser = asyncHandler (async (req, res) => {
 
     const getUserChannelProfile = asyncHandler(async(req, res) => {
 
-        const { username } = req.param
+        const { username } = req.params
 
         if (!username?.trim()) {
             throw new ApiError(400, "Username is missing")            
@@ -345,7 +345,7 @@ const logoutUser = asyncHandler (async (req, res) => {
                     subscribersCount: {$size: "$subscribers"},
                     channelsSubscribedToCount: {$size: "$subscribedTo"},
                     isSubscribed:{
-                    $condition:{
+                    $cond:{
                         if:{$in: [req.user?._id, "$subscribers.subscriber"]},
                         then: true,
                         else: false
@@ -369,7 +369,7 @@ const logoutUser = asyncHandler (async (req, res) => {
             }
         ])
 
-        if (!channel?.lenght) {
+        if (!channel?.length) {
             throw new ApiError(404, "Channel doesnt exist")
         }
 
